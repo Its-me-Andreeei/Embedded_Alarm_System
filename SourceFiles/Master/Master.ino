@@ -16,7 +16,7 @@ const char password[PASS_LEN] = {"1234"};
 //----------------pins---------------------
 const uint8_t servo_PIN = 10;
 const uint8_t PIR_sensor1_PIN = A3;
-const uint8_t PIR_sensor1_PIN = A2;
+const uint8_t PIR_sensor2_PIN = A2;
 const uint8_t buzzer_PIN = 12;
 //-----------------------------------------
 
