@@ -7,7 +7,10 @@
 
 #define SLAVE_PRESENT_CF
 #define DEBUG_CF
-#define PIR_CALIB_TM 20000U
+#define PIR_CALIB_TM_CF 20000U
+#define TONE_DURATION_CF 10000
+#define FIRST_SENSOR_FREQ_CF 1000
+#define SECOND_SENSOR_FREQ_CF 220
 
 #define PASS_LEN 4U +1U
 const byte ROWS = 4; 
@@ -132,7 +135,7 @@ void loop(){
     if(state.detectionSensorState == MUST_INIT)
     {
       //PIR sensors requirement wait for calibration
-      if(millis() >= PIR_CALIB_TM)
+      if(millis() >= PIR_CALIB_TM_CF)
       {
         state.detectionSensorState = ENABLED;
         write_status("PIR INIT: done");
@@ -150,29 +153,29 @@ void loop(){
 
       if(sensor_value1==HIGH && sensor_value2 == HIGH)
       {
-        write_status("Alert room 1. Alert room 2");
+        write_status("Alert room 1.Alert room 2");
         for(char i=0; i<15; i++)
         {
-          tone(buzzer_PIN, 1000, 1000);
+          tone(buzzer_PIN, FIRST_SENSOR_FREQ_CF, TONE_DURATION_CF);
           delay(100);
-          tone(buzzer_PIN, 220, 1000);
+          tone(buzzer_PIN, SECOND_SENSOR_FREQ_CF, TONE_DURATION_CF);
           delay(100);
         }
       }
       else if(sensor_value1 == HIGH)
       {
         write_status("Alert room 1");
-        tone(buzzer_PIN, 1000, 1000);
+        tone(buzzer_PIN, FIRST_SENSOR_FREQ_CF, TONE_DURATION_CF);
       }
       else if(sensor_value2 == HIGH)
       {
         write_status("Alert room 2");
-        tone(buzzer_PIN, 220, 1000);
+        tone(buzzer_PIN, SECOND_SENSOR_FREQ_CF, TONE_DURATION_CF);
       }
       else {
         write_status(" "); //clear screen
       }
-      delay(10000);
+      delay(1000);
     }
   }
 }
