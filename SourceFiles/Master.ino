@@ -13,8 +13,12 @@
 const byte ROWS = 4; 
 const byte COLS = 4; 
 const char password[PASS_LEN] = {"1234"};
+//----------------pins---------------------
 const uint8_t servo_PIN = 10;
-const uint8_t PIR_sensor_PIN = A3;
+const uint8_t PIR_sensor1_PIN = A3;
+const uint8_t PIR_sensor1_PIN = A2;
+const uint8_t buzzer_PIN = 12;
+//-----------------------------------------
 
 enum {
   NOT_PROTECTED,
@@ -67,15 +71,22 @@ Keypad customKeypad = Keypad(makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS)
   #define Monitor_Write(x) 
 #endif
 
-void setup(){
+void setup()
+{
+  pinMode(servo_PIN, OUTPUT);
+  pinMode(PIR_sensor1_PIN, INPUT);
+  pinMode(PIR_sensor2_PIN, INPUT);
+
   Wire.begin();
+  write_status(" ");
   servoModule.attach(servo_PIN);
   servoModule.write(0);
+  delay(15);
   #ifdef DEBUG_CF
     Serial.begin(9600);
   #endif
   index = 0;
-  pinMode(PIR_sensor_PIN, INPUT);
+  
   state.protectionState = NOT_PROTECTED;
   state.detectionSensorState = MUST_INIT;
   state.servoState = NOT_ENABLED;
@@ -83,7 +94,6 @@ void setup(){
   pass_to_be_checked = (char *)malloc(PASS_LEN * (sizeof(char)));
   if(pass_to_be_checked == NULL)
     abort();
-
 }
   
 void loop(){
@@ -127,12 +137,22 @@ void loop(){
         state.detectionSensorState = ENABLED;
         write_status("PIR INIT: done");
         delay(2000); //system sleep for lcd clean-up - no risk for using delay here - sensor not read
-        write_status(" ");
+        write_status(" "); // workaround for lcd to clear screen
       }
     }
     if(state.detectionSensorState == ENABLED)
     {
-      Monitor_Write(digitalRead(PIR_sensor_PIN));
+      uint8_t sensor_value1 = digitalRead(PIR_sensor1_PIN);
+      Monitor_Write(sensor_value1);
+      if(sensor_value1 == HIGH)
+      {
+        write_status("Alert room 1");
+        tone(buzzer_PIN, 440, 100);
+      }
+      else {
+      write_status(" ");
+      }
+
     }
   }
 }
