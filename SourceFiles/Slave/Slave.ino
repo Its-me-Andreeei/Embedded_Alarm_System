@@ -25,26 +25,32 @@ void onReceive_Handler(int bytes)
   acknowledge_flag = 0;
   char *str = NULL;
   int index=0;
+  char c;
 
-  if(bytes!= 0)
+  lcd.clear();
+
+  if(bytes!= 0 && bytes <= 32) //only 32 characters can fill LCD and 1 char = 1 byte
   {
     str = (char *)malloc((bytes+1) * sizeof(char));
     if(str == NULL) //not enough memory !
-    {
       abort();
-    }
-
     
     while(Wire.available())
     {
-      str[index]=Wire.read();
-      Serial.println(str[index]);
+      c = Wire.read();
+      if( c == '.') //limit of characters per row achived
+      {
+        str[index] = '\0';
+        lcd.write(str);
+        lcd.setCursor(0, 1);
+        index = 0;
+        continue;
+      }
+      str[index] = c;
+      //Serial.println(str[index]);
       index++;
     }
     str[index]='\0';
-
-    lcd.clear();
-    lcd.setCursor(0, 0);
     lcd.write(str);
 
     free(str);

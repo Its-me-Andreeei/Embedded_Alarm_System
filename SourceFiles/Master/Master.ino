@@ -143,16 +143,36 @@ void loop(){
     if(state.detectionSensorState == ENABLED)
     {
       uint8_t sensor_value1 = digitalRead(PIR_sensor1_PIN);
-      Monitor_Write(sensor_value1);
-      if(sensor_value1 == HIGH)
+      uint8_t sensor_value2 = digitalRead(PIR_sensor2_PIN);
+
+      //Monitor_Write(sensor_value1);
+      Monitor_Write(sensor_value2);
+
+      if(sensor_value1==HIGH && sensor_value2 == HIGH)
+      {
+        write_status("Alert room 1. Alert room 2");
+        for(char i=0; i<15; i++)
+        {
+          tone(buzzer_PIN, 1000, 1000);
+          delay(100);
+          tone(buzzer_PIN, 220, 1000);
+          delay(100);
+        }
+      }
+      else if(sensor_value1 == HIGH)
       {
         write_status("Alert room 1");
-        tone(buzzer_PIN, 440, 100);
+        tone(buzzer_PIN, 1000, 1000);
+      }
+      else if(sensor_value2 == HIGH)
+      {
+        write_status("Alert room 2");
+        tone(buzzer_PIN, 220, 1000);
       }
       else {
-      write_status(" ");
+        write_status(" "); //clear screen
       }
-
+      delay(10000);
     }
   }
 }
