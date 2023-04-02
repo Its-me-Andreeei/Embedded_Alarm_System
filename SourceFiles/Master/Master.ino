@@ -8,7 +8,7 @@
 #define SLAVE_PRESENT_CF
 #define DEBUG_CF
 #define PIR_CALIB_TM_CF 20000U
-#define TONE_DURATION_CF 10000
+#define TONE_DURATION_CF 3000
 #define FIRST_SENSOR_FREQ_CF 1000
 #define SECOND_SENSOR_FREQ_CF 220
 
@@ -121,7 +121,12 @@ void loop(){
       state.protectionState = PROTECTED;
     }
     else
-      index_pass = 0;
+    {
+        index_pass = 0;
+        write_status("Wrong Password");
+        delay(2000);
+        write_status(" ");
+    }
   }
   else if(state.protectionState == PROTECTED)
   {
