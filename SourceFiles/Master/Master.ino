@@ -55,7 +55,7 @@ SHA256 sha256;
 const byte password_encrypted[32] = {0x6E, 0xB8, 0x69, 0xA0, 0x7B, 0x04, 0x65, 0x0E, 0xDD, 0x94, 0x97, 0xB3, 0x84};
 
 //----------------pins---------------------
-const uint8_t servo_PIN = 10;
+const uint8_t servo_PIN = 11;
 const uint8_t PIR_sensor1_PIN = 2;
 const uint8_t PIR_sensor2_PIN = 3;
 const uint8_t buzzer_PIN = 12;
@@ -83,8 +83,8 @@ char hexaKeys[ROWS][COLS] = {
   {'D', 'E', 'F', 'G'}
 };
 
-byte rowPins[ROWS] = {6, 7, 8, 9}; 
-byte colPins[COLS] = {2, 3, 4, 5};
+byte rowPins[ROWS] = {13, 10, 9, 8}; 
+byte colPins[COLS] = {7, 6, 5, 4};
 
 //index used for comparing entered password
 uint8_t index;
