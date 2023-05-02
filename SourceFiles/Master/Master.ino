@@ -1,3 +1,38 @@
+#include <AES.h>
+#include <AuthenticatedCipher.h>
+#include <BLAKE2b.h>
+#include <BLAKE2s.h>
+#include <BigNumberUtil.h>
+#include <BlockCipher.h>
+#include <CTR.h>
+#include <ChaCha.h>
+#include <ChaChaPoly.h>
+#include <Cipher.h>
+#include <Crypto.h>
+#include <Curve25519.h>
+#include <EAX.h>
+#include <Ed25519.h>
+#include <GCM.h>
+#include <GF128.h>
+#include <GHASH.h>
+#include <HKDF.h>
+#include <Hash.h>
+#include <KeccakCore.h>
+#include <NoiseSource.h>
+#include <OMAC.h>
+#include <P521.h>
+#include <Poly1305.h>
+#include <RNG.h>
+#include <SHA224.h>
+#include <SHA256.h>
+#include <SHA3.h>
+#include <SHA384.h>
+#include <SHA512.h>
+#include <SHAKE.h>
+#include <XOF.h>
+#include <XTS.h>
+#include <avr/sleep.h>
+
 #include <Wire.h>
 #include <LiquidCrystal.h>
 #include <Servo.h>
@@ -15,11 +50,14 @@
 #define PASS_LEN 4U +1U
 const byte ROWS = 4; 
 const byte COLS = 4; 
-const char password[PASS_LEN] = {"1234"};
+
+SHA256 sha256;
+const byte password_encrypted[32] = {0x6E, 0xB8, 0x69, 0xA0, 0x7B, 0x04, 0x65, 0x0E, 0xDD, 0x94, 0x97, 0xB3, 0x84};
+
 //----------------pins---------------------
 const uint8_t servo_PIN = 10;
-const uint8_t PIR_sensor1_PIN = A3;
-const uint8_t PIR_sensor2_PIN = A2;
+const uint8_t PIR_sensor1_PIN = 2;
+const uint8_t PIR_sensor2_PIN = 3;
 const uint8_t buzzer_PIN = 12;
 //-----------------------------------------
 
@@ -50,7 +88,8 @@ byte colPins[COLS] = {2, 3, 4, 5};
 
 //index used for comparing entered password
 uint8_t index;
-char *pass_to_be_checked;
+byte pass_to_be_checked[32];
+byte pass_to_be_checked_after_encryption[32];
 Servo servoModule;
 
 Keypad customKeypad = Keypad(makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS); 
@@ -94,30 +133,34 @@ void setup()
   state.detectionSensorState = MUST_INIT;
   state.servoState = NOT_ENABLED;
 
-  pass_to_be_checked = (char *)malloc(PASS_LEN * (sizeof(char)));
-  if(pass_to_be_checked == NULL)
-    abort();
 }
   
 void loop(){
   if(state.protectionState == NOT_PROTECTED)
   {
     uint8_t index_pass = 0;
-    char readKey;
+    byte readKey;
     while(index_pass < PASS_LEN -1)
     {
-      readKey = customKeypad.getKey();
+      readKey = (byte) customKeypad.getKey();
       if(readKey)
       {
         Monitor_Write(readKey);
         pass_to_be_checked[index_pass++] = readKey;
       }
     }
-    pass_to_be_checked[strlen(pass_to_be_checked)] = '\0';
 
-    if(strncmp(password, pass_to_be_checked, PASS_LEN-1) == 0)
+    sha256.update(pass_to_be_checked, sizeof(pass_to_be_checked));
+    sha256.finalize(pass_to_be_checked_after_encryption, sizeof(pass_to_be_checked_after_encryption));
+    sha256.clear();
+    boolean pass_OK = true;
+    for(byte i = 0; i<sizeof(password_encrypted); i++)
     {
-      free(pass_to_be_checked);
+      if(pass_to_be_checked_after_encryption[i] != password_encrypted)
+        pass_OK = false;
+    }
+    if(pass_OK)
+    {
       state.protectionState = PROTECTED;
     }
     else
