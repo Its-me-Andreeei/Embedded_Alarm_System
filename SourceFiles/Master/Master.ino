@@ -1,37 +1,9 @@
-#include <AES.h>
-#include <AuthenticatedCipher.h>
-#include <BLAKE2b.h>
-#include <BLAKE2s.h>
-#include <BigNumberUtil.h>
-#include <BlockCipher.h>
-#include <CTR.h>
-#include <ChaCha.h>
-#include <ChaChaPoly.h>
-#include <Cipher.h>
 #include <Crypto.h>
-#include <Curve25519.h>
-#include <EAX.h>
-#include <Ed25519.h>
-#include <GCM.h>
-#include <GF128.h>
-#include <GHASH.h>
-#include <HKDF.h>
-#include <Hash.h>
-#include <KeccakCore.h>
-#include <NoiseSource.h>
-#include <OMAC.h>
-#include <P521.h>
-#include <Poly1305.h>
-#include <RNG.h>
-#include <SHA224.h>
+
 #include <SHA256.h>
-#include <SHA3.h>
-#include <SHA384.h>
-#include <SHA512.h>
-#include <SHAKE.h>
-#include <XOF.h>
-#include <XTS.h>
+
 #include <avr/sleep.h>
+#include <avr/power.h>
 
 #include <Wire.h>
 #include <LiquidCrystal.h>
@@ -46,13 +18,15 @@
 #define TONE_DURATION_CF 3000
 #define FIRST_SENSOR_FREQ_CF 1000
 #define SECOND_SENSOR_FREQ_CF 220
+#define TIME_UNTIL_LP_REACHED_MS 7000
 
 #define PASS_LEN 4U +1U
 const byte ROWS = 4; 
 const byte COLS = 4; 
 
 SHA256 sha256;
-const byte password_encrypted[32] = {0x6E, 0xB8, 0x69, 0xA0, 0x7B, 0x04, 0x65, 0x0E, 0xDD, 0x94, 0x97, 0xB3, 0x84};
+
+const byte password_encrypted[32] = {0xB3, 0xD9, 0x1B, 0xF8, 0xA2, 0x3F, 0xA7, 0xEB, 0x3E, 0x26, 0xD5, 0x34, 0x40, 0xE9, 0x0A, 0x12, 0x73, 0x03, 0x0C, 0x6E, 0xB8, 0x69, 0xA0, 0x7B, 0x04, 0x65, 0x0E, 0xDD, 0x94, 0x97, 0xB3, 0x84};
 
 //----------------pins---------------------
 const uint8_t servo_PIN = 11;
@@ -92,6 +66,8 @@ byte pass_to_be_checked[32];
 byte pass_to_be_checked_after_encryption[32];
 Servo servoModule;
 
+unsigned long lastTimeDetected_ms = 0;
+
 Keypad customKeypad = Keypad(makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS); 
 
 #ifdef SLAVE_PRESENT_CF
@@ -113,11 +89,28 @@ Keypad customKeypad = Keypad(makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS)
   #define Monitor_Write(x) 
 #endif
 
+volatile bool wakeUp_conditions_OK = false;
+void perform_WakeUp()
+{
+  Serial.println("Wake Up!");
+ noInterrupts();
+ if(wakeUp_conditions_OK == true)
+ {
+   Serial.println("IN IF");
+   sleep_disable();
+   wakeUp_conditions_OK = false;
+ }
+ interrupts();
+}
 void setup()
 {
   pinMode(servo_PIN, OUTPUT);
   pinMode(PIR_sensor1_PIN, INPUT);
   pinMode(PIR_sensor2_PIN, INPUT);
+  sleep_enable();
+  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+  attachInterrupt(digitalPinToInterrupt(2), perform_WakeUp, RISING);
+  attachInterrupt(digitalPinToInterrupt(3), perform_WakeUp, RISING);
 
   Wire.begin();
   write_status(" ");
@@ -145,7 +138,7 @@ void loop(){
       readKey = (byte) customKeypad.getKey();
       if(readKey)
       {
-        Monitor_Write(readKey);
+        Monitor_Write(((char)readKey));
         pass_to_be_checked[index_pass++] = readKey;
       }
     }
@@ -156,7 +149,7 @@ void loop(){
     boolean pass_OK = true;
     for(byte i = 0; i<sizeof(password_encrypted); i++)
     {
-      if(pass_to_be_checked_after_encryption[i] != password_encrypted)
+      if(pass_to_be_checked_after_encryption[i] != password_encrypted[i])
         pass_OK = false;
     }
     if(pass_OK)
@@ -188,6 +181,7 @@ void loop(){
         state.detectionSensorState = ENABLED;
         write_status("PIR INIT: done");
         delay(2000); //system sleep for lcd clean-up - no risk for using delay here - sensor not read
+        interrupts();
         write_status(" "); // workaround for lcd to clear screen
       }
     }
@@ -196,7 +190,34 @@ void loop(){
       uint8_t sensor_value1 = digitalRead(PIR_sensor1_PIN);
       uint8_t sensor_value2 = digitalRead(PIR_sensor2_PIN);
 
-      //Monitor_Write(sensor_value1);
+      Monitor_Write(sensor_value1);
+      if( sensor_value1 || sensor_value2)
+      {
+        lastTimeDetected_ms = millis();
+      }
+
+      unsigned long currentTime_ms = millis();
+      if(currentTime_ms - lastTimeDetected_ms <= TIME_UNTIL_LP_REACHED_MS)
+      {
+        power_adc_disable();
+        //power_spi_disable();
+        power_twi_disable();
+        // power_timer0_disable();
+        // power_timer1_disable();
+        // power_timer2_disable();
+        wakeUp_conditions_OK = true;
+        write_status(" ");
+        Serial.println("Before Sleep");
+        sleep_cpu();
+        Serial.println("After Sleep");
+        sleep_enable();
+        power_adc_enable();
+        //power_spi_enable();
+        power_twi_enable();
+        // power_timer0_enable();
+        // power_timer1_enable();
+        // power_timer2_enable();
+      }
       Monitor_Write(sensor_value2);
 
       if(sensor_value1==HIGH && sensor_value2 == HIGH)
