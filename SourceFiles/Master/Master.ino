@@ -2,9 +2,6 @@
 
 #include <SHA256.h>
 
-#include <avr/sleep.h>
-#include <avr/power.h>
-
 #include <Wire.h>
 #include <LiquidCrystal.h>
 #include <Servo.h>
