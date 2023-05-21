@@ -1,4 +1,5 @@
 #include <Crypto.h>
+
 #include <SHA256.h>
 
 #include <Wire.h>
@@ -20,7 +21,7 @@ const byte ROWS = 4;
 const byte COLS = 4; 
 
 SHA256 sha256;
-const byte password_encrypted[32] = {0x6E, 0xB8, 0x69, 0xA0, 0x7B, 0x04, 0x65, 0x0E, 0xDD, 0x94, 0x97, 0xB3, 0x84};
+const byte password_encrypted[32]={0xB3, 0xD9, 0x1B, 0xF8, 0xA2, 0x3F, 0xA7, 0xEB, 0x3E, 0x26, 0xD5, 0x34, 0x40, 0xE9, 0x0A, 0x12, 0x73, 0x03, 0x0C, 0x6E, 0xB8, 0x69, 0xA0, 0x7B, 0x04, 0x65, 0x0E, 0xDD, 0x94, 0x97, 0xB3, 0x84};
 
 //----------------pins---------------------
 const uint8_t servo_PIN = 11;
@@ -113,7 +114,7 @@ void loop(){
       readKey = (byte) customKeypad.getKey();
       if(readKey)
       {
-        Monitor_Write(readKey);
+        Monitor_Write((char) readKey);
         pass_to_be_checked[index_pass++] = readKey;
       }
     }
@@ -121,6 +122,10 @@ void loop(){
     sha256.update(pass_to_be_checked, sizeof(pass_to_be_checked));
     sha256.finalize(pass_to_be_checked_after_encryption, sizeof(pass_to_be_checked_after_encryption));
     sha256.clear();
+    for (int i = 0; i < sizeof(pass_to_be_checked_after_encryption); i++) {
+              Serial.print(pass_to_be_checked_after_encryption[i] < 0x10 ? "0" : "");  // Ensure leading zero for values less than 0x10
+              Serial.print(pass_to_be_checked_after_encryption[i], HEX);  // Print the hash value as hexadecimal
+  }
     boolean pass_OK = true;
     for(byte i = 0; i<sizeof(password_encrypted); i++)
     {
