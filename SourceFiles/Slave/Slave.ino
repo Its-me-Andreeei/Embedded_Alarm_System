@@ -4,8 +4,8 @@
 
 LiquidCrystal lcd(2,3, 4,5,6,7);
 
-short acknowledge_flag;
-
+short acknowledge_flag = 0;
+char str[100]; //used as buffer to display received characters from master
 void onReceive_Handler(int bytes);
 void onRequest_Handler(void);
 
@@ -21,9 +21,7 @@ void setup(){
 }
 void onReceive_Handler(int bytes)
 {
-
   acknowledge_flag = 0;
-  char *str = NULL;
   int index=0;
   char c;
 
@@ -31,10 +29,6 @@ void onReceive_Handler(int bytes)
 
   if(bytes!= 0 && bytes <= 32) //only 32 characters can fill LCD and 1 char = 1 byte
   {
-    str = (char *)malloc((bytes+1) * sizeof(char));
-    if(str == NULL) //not enough memory !
-      abort();
-    
     while(Wire.available())
     {
       c = Wire.read();
@@ -47,16 +41,16 @@ void onReceive_Handler(int bytes)
         continue;
       }
       str[index] = c;
-      //Serial.println(str[index]);
+      //Serial.println(str[index]); //for debugging purpose
       index++;
     }
     str[index]='\0';
     lcd.write(str);
 
-    free(str);
     acknowledge_flag = 1;
   }
 }
+
 void onRequest_Handler()
 {
   Wire.write(acknowledge_flag);
